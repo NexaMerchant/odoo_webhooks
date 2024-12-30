@@ -109,6 +109,31 @@ class SaleOrder(models.Model):
         for webhook in webhooks:
             webhook._send_webhook(self, 'unlink')
         return res
+
+# Sale Order Delivery create and update
+class SaleOrderDelivery(models.Model):
+    _inherit = 'stock.picking'
+
+    def write(self, vals):
+        res = super(SaleOrderDelivery, self).write(vals)
+        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'stock.picking')])
+        for webhook in webhooks:
+            webhook._send_webhook(self, 'write')
+        return res
+
+    def create(self, vals):
+        res = super(SaleOrderDelivery, self).create(vals)
+        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'stock.picking')])
+        for webhook in webhooks:
+            webhook._send_webhook(res, 'create')
+        return res
+    def unlink(self):
+        res = super(SaleOrderDelivery, self).unlink()
+        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'stock.picking')])
+        for webhook in webhooks:
+            webhook._send_webhook(self, 'unlink')
+        return res
+
     
 # Sale Order Line Update, create and delete
 class SaleOrderLine(models.Model):
