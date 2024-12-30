@@ -2,8 +2,12 @@
 
 from odoo import models, fields, api
 import requests
-import json
 import logging
+from requests import Request, Session
+import json
+from requests.exceptions import RequestException
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 _logger = logging.getLogger(__name__)
 
@@ -17,6 +21,7 @@ class webhooks(models.Model):
     url = fields.Char(string='Webhook URL', required=True)
     is_active = fields.Boolean(string='Active', default=True)
     model_id = fields.Many2one('ir.model', string='Model', required=True, ondelete='cascade')
+    model_name = fields.Char(related='model_id.model', string='Model Name')
     trigger_on_create = fields.Boolean(string='Trigger on Create', default=True)
     trigger_on_write = fields.Boolean(string='Trigger on Write', default=True)
     trigger_on_delete = fields.Boolean(string='Trigger on Delete', default=True)
@@ -40,25 +45,43 @@ class webhooks(models.Model):
                 'record_id': record.id,
                 'values': record.read()[0]
             }
+
+            print(data)
+
+            print(f'Sending webhook to {self.url}')
             
             headers = {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'User-Agent': 'Odoo-Webhook/1.0'
             }
-            
-            response = requests.post(
-                self.url,
-                data=json.dumps(data),
-                headers=headers
+
+            print(headers)
+
+            session = requests.Session()
+            session.verify = True
+            print(session)
+            response = session.post(
+                url=self.url.strip(),
+                data=data,
+                headers=headers,
+                verify=True
             )
+            
+            print(response.status_code)
+            print(response.text)
+            response.raise_for_status()
             
             self.write({
                 'last_call': fields.Datetime.now()
             })
             
             _logger.info(f'Webhook sent: {self.url} - Status: {response.status_code}')
-            
+        except RequestException as e:
+            _logger.error(f'Webhook request failed: {str(e)}')
+            raise 
         except Exception as e:
             _logger.error(f'Webhook failed: {self.url} - Error: {str(e)}')
+            raise
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
@@ -66,15 +89,25 @@ class SaleOrder(models.Model):
     def write(self, vals):
         res = super(SaleOrder, self).write(vals)
         webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
+        print(webhooks)
         for webhook in webhooks:
+            print(webhook)
             webhook._send_webhook(self, 'write')
         return res
 
     def create(self, vals):
         res = super(SaleOrder, self).create(vals)
         webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
+        print(webhooks)
         for webhook in webhooks:
             webhook._send_webhook(res, 'create')
+        return res
+    def unlink(self):
+        res = super(SaleOrder, self).unlink()
+        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
+        print(webhooks)
+        for webhook in webhooks:
+            webhook._send_webhook(self, 'unlink')
         return res
     
 # Sale Order Line Update, create and delete
@@ -119,9 +152,14 @@ class ProductTemplate(models.Model):
         for webhook in webhooks:
             webhook._send_webhook(res, 'create')
         return res
+    def unlink(self):
+        res = super(ProductTemplate, self).unlink()
+        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.template')])
+        for webhook in webhooks:
+            webhook._send_webhook(self, 'unlink')
+        return res
     
 # Product Update and create
-
 class ProductProduct(models.Model):
     _inherit = 'product.product'
 
@@ -137,4 +175,10 @@ class ProductProduct(models.Model):
         webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.product')])
         for webhook in webhooks:
             webhook._send_webhook(res, 'create')
+        return res
+    def unlink(self):
+        res = super(ProductProduct, self).unlink()
+        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.product')])
+        for webhook in webhooks:
+            webhook._send_webhook(self, 'unlink')
         return res
