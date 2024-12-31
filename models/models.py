@@ -47,14 +47,16 @@ class webhooks(models.Model):
                 'values': record.read()[0]
             }
 
-            print(data)
-
             print(f'Sending webhook to {self.url}')
             
             headers = {
                 'Content-Type': 'application/json',
                 'User-Agent': 'Odoo-Webhook/1.0'
             }
+
+            # When user set secert key, add it to headers
+            if self.secert_key:
+                headers['Secert-Key'] = self.secert_key
 
             print(headers)
 
