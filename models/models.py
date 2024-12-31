@@ -24,11 +24,12 @@ class webhooks(models.Model):
     model_name = fields.Char(related='model_id.model', string='Model Name')
     secert_key = fields.Char(string='Secert Key')
     trigger_on_create = fields.Boolean(string='Trigger on Create', default=True)
-    trigger_on_write = fields.Boolean(string='Trigger on Write', default=True)
+    trigger_on_write = fields.Boolean(string='Trigger on Write', default=True )
     trigger_on_delete = fields.Boolean(string='Trigger on Delete', default=True)
     last_call = fields.Datetime(string='Last Called')
 
     # use queue job to send webhook
+    # use cron job to send webhook
     def _send_webhook(self, record, action):
         if not self.is_active:
             return
@@ -66,9 +67,9 @@ class webhooks(models.Model):
                 url=self.url.strip(),
                 data=data,
                 headers=headers,
+                timeout=10,
                 verify=True
             )
-            
             response.raise_for_status()
             
             self.write({

@@ -10,7 +10,7 @@
           <field name="name"/>
           <field name="url"/>
           <field name="is_active"/>
-          <field name="model_name"/>
+          <field name="model_id"/>
           <field name="website_id"/>
           <field name="secert_key"/>
           <field name="trigger_on_create"/>
@@ -53,16 +53,15 @@
 
     <!-- menu categories -->
 
-    <!-- <menuitem name="Menu 1" id="webhooks.menu_1" parent="webhooks.menu_root"/>
-    <menuitem name="Menu 2" id="webhooks.menu_2" parent="webhooks.menu_root"/> -->
+    <menuitem name="Menu 1" id="webhooks.menu_1" parent="webhooks.menu_root"/>
+    <menuitem name="Menu 2" id="webhooks.menu_2" parent="webhooks.menu_root"/>
 
     <!-- actions -->
 
-    <!-- <menuitem name="List" id="webhooks.menu_1_list" parent="webhooks.menu_1"
+    <menuitem name="List" id="webhooks.menu_1_list" parent="webhooks.menu_1"
               action="webhooks.action_window"/>
     <menuitem name="Server to list" id="webhooks" parent="webhooks.menu_2"
-              action="webhooks.action_server"/> -->
-
+              action="webhooks.action_server"/>
 
   <record id="view_webhooks_form" model="ir.ui.view">
     <field name="name">webhooks.form</field>
@@ -75,7 +74,7 @@
                     <field name="url"/>
                     <field name="is_active"/>
                     <field name="website_id"/>
-                    <field name="model_name"/>
+                    <field name="model_id"/>
                     <field name="secert_key"/>
                     <field name="trigger_on_create"/>
                     <field name="trigger_on_write"/>
