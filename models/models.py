@@ -40,6 +40,9 @@ class webhooks(models.Model):
         # add delete trigger
         if action == 'unlink' and not self.trigger_on_delete:
             return
+        # if the webhook has website_id, check if the record belongs to the website
+        if self.website_id and record.website_id != self.website_id:
+            return
         try:
             data = {
                 'action': action,
@@ -90,16 +93,13 @@ class SaleOrder(models.Model):
     def write(self, vals):
         res = super(SaleOrder, self).write(vals)
         webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
-        print(webhooks)
         for webhook in webhooks:
-            print(webhook)
             webhook._send_webhook(self, 'write')
         return res
 
     def create(self, vals):
         res = super(SaleOrder, self).create(vals)
         webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
-        print(webhooks)
         for webhook in webhooks:
             webhook._send_webhook(res, 'create')
         return res
