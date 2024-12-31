@@ -12,6 +12,7 @@
           <field name="is_active"/>
           <field name="model_name"/>
           <field name="website_id"/>
+          <field name="secert_key"/>
           <field name="trigger_on_create"/>
           <field name="trigger_on_write"/>
           <field name="trigger_on_delete"/>
@@ -75,6 +76,7 @@
                     <field name="is_active"/>
                     <field name="website_id"/>
                     <field name="model_name"/>
+                    <field name="secert_key"/>
                     <field name="trigger_on_create"/>
                     <field name="trigger_on_write"/>
                     <field name="trigger_on_delete"/>
