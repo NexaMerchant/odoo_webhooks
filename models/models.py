@@ -90,19 +90,25 @@ class webhooks(models.Model):
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+    @api.model
     def write(self, vals):
         res = super(SaleOrder, self).write(vals)
         webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
         for webhook in webhooks:
             webhook._send_webhook(self, 'write')
         return res
-
+    @api.model
     def create(self, vals):
-        res = super(SaleOrder, self).create(vals)
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
-        for webhook in webhooks:
-            webhook._send_webhook(res, 'create')
-        return res
+        try:
+            res = super(SaleOrder, self).create(vals)
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
+            for webhook in webhooks:
+                webhook._send_webhook(res, 'create')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook create sale order failed: {str(e)}')
+            raise
+    @api.model
     def unlink(self):
         res = super(SaleOrder, self).unlink()
         webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
