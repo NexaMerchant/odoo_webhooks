@@ -92,11 +92,15 @@ class SaleOrder(models.Model):
 
     @api.model
     def write(self, vals):
-        res = super(SaleOrder, self).write(vals)
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
-        for webhook in webhooks:
-            webhook._send_webhook(self, 'write')
-        return res
+        try:
+            res = super(SaleOrder, self).write(vals)
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
+            for webhook in webhooks:
+                webhook._send_webhook(self, 'write')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook write sale order failed: {str(e)}')
+            raise
     @api.model
     def create(self, vals):
         try:
@@ -110,107 +114,165 @@ class SaleOrder(models.Model):
             raise
     @api.model
     def unlink(self):
-        res = super(SaleOrder, self).unlink()
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
-        print(webhooks)
-        for webhook in webhooks:
-            webhook._send_webhook(self, 'unlink')
-        return res
+        try:
+            res = super(SaleOrder, self).unlink()
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
+            print(webhooks)
+            for webhook in webhooks:
+                webhook._send_webhook(self, 'unlink')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook unlink sale order failed: {str(e)}')
+            raise
 
 # Sale Order Delivery create and update
 class SaleOrderDelivery(models.Model):
     _inherit = 'stock.picking'
 
     def write(self, vals):
-        res = super(SaleOrderDelivery, self).write(vals)
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'stock.picking')])
-        for webhook in webhooks:
-            webhook._send_webhook(self, 'write')
-        return res
+        try:
+            res = super(SaleOrderDelivery, self).write(vals)
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'stock.picking')])
+            for webhook in webhooks:
+                webhook._send_webhook(self, 'write')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook write sale order delivery failed: {str(e)}')
+            raise
 
     def create(self, vals):
-        res = super(SaleOrderDelivery, self).create(vals)
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'stock.picking')])
-        for webhook in webhooks:
-            webhook._send_webhook(res, 'create')
-        return res
+        try:
+            res = super(SaleOrderDelivery, self).create(vals)
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'stock.picking')])
+            for webhook in webhooks:
+                webhook._send_webhook(res, 'create')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook create sale order delivery failed: {str(e)}')
+            raise
     def unlink(self):
-        res = super(SaleOrderDelivery, self).unlink()
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'stock.picking')])
-        for webhook in webhooks:
-            webhook._send_webhook(self, 'unlink')
-        return res
+        try:
+            res = super(SaleOrderDelivery, self).unlink()
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'stock.picking')])
+            for webhook in webhooks:
+                webhook._send_webhook(self, 'unlink')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook unlink sale order delivery failed: {str(e)}')
+            raise
 
     
 # Sale Order Line Update, create and delete
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
 
+    @api.model
     def write(self, vals):
-        res = super(SaleOrderLine, self).write(vals)
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order.line')])
-        for webhook in webhooks:
-            webhook._send_webhook(self, 'write')
-        return res
-
+        try:
+            res = super(SaleOrderLine, self).write(vals)
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order.line')])
+            for webhook in webhooks:
+                webhook._send_webhook(self, 'write')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook write sale order line failed: {str(e)}')
+            raise
+    @api.model
     def create(self, vals):
-        res = super(SaleOrderLine, self).create(vals)
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order.line')])
-        for webhook in webhooks:
-            webhook._send_webhook(res, 'create')
-        return res
-    
+        try:
+            res = super(SaleOrderLine, self).create(vals)
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order.line')])
+            for webhook in webhooks:
+                webhook._send_webhook(res, 'create')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook create sale order line failed: {str(e)}')
+            raise
+    @api.model
     def unlink(self):
-        res = super(SaleOrderLine, self).unlink()
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order.line')])
-        for webhook in webhooks:
-            webhook._send_webhook(self, 'unlink')
-        return res
+        try:
+            res = super(SaleOrderLine, self).unlink()
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order.line')])
+            for webhook in webhooks:
+                webhook._send_webhook(self, 'unlink')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook unlink sale order line failed: {str(e)}')
+            raise
 
 #Product Update and create
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
+    @api.model
     def write(self, vals):
-        res = super(ProductTemplate, self).write(vals)
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.template')])
-        for webhook in webhooks:
-            webhook._send_webhook(self, 'write')
-        return res
-
+        try:
+            res = super(ProductTemplate, self).write(vals)
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.template')])
+            for webhook in webhooks:
+                webhook._send_webhook(self, 'write')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook write product template failed: {str(e)}')
+            raise
+    
+    @api.model
     def create(self, vals):
-        res = super(ProductTemplate, self).create(vals)
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.template')])
-        for webhook in webhooks:
-            webhook._send_webhook(res, 'create')
-        return res
+        try:
+            res = super(ProductTemplate, self).create(vals)
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.template')])
+            for webhook in webhooks:
+                webhook._send_webhook(res, 'create')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook create product template failed: {str(e)}')
+            raise
+    @api.model
     def unlink(self):
-        res = super(ProductTemplate, self).unlink()
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.template')])
-        for webhook in webhooks:
-            webhook._send_webhook(self, 'unlink')
-        return res
+        try:
+            res = super(ProductTemplate, self).unlink()
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.template')])
+            for webhook in webhooks:
+                webhook._send_webhook(self, 'unlink')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook unlink product template failed: {str(e)}')
+            raise
     
 # Product Update and create
 class ProductProduct(models.Model):
     _inherit = 'product.product'
 
+    @api.model
     def write(self, vals):
-        res = super(ProductProduct, self).write(vals)
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.product')])
-        for webhook in webhooks:
-            webhook._send_webhook(self, 'write')
-        return res
-
+        try:
+            res = super(ProductProduct, self).write(vals)
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.product')])
+            for webhook in webhooks:
+                webhook._send_webhook(self, 'write')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook write product product failed: {str(e)}')
+            raise
+    @api.model
     def create(self, vals):
-        res = super(ProductProduct, self).create(vals)
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.product')])
-        for webhook in webhooks:
-            webhook._send_webhook(res, 'create')
-        return res
+        try:
+            res = super(ProductProduct, self).create(vals)
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.product')])
+            for webhook in webhooks:
+                webhook._send_webhook(res, 'create')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook create product product failed: {str(e)}')
+            raise
+    @api.model
     def unlink(self):
-        res = super(ProductProduct, self).unlink()
-        webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.product')])
-        for webhook in webhooks:
-            webhook._send_webhook(self, 'unlink')
-        return res
+        try:
+            res = super(ProductProduct, self).unlink()
+            webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.product')])
+            for webhook in webhooks:
+                webhook._send_webhook(self, 'unlink')
+            return res
+        except Exception as e:
+            _logger.error(f'Webhook unlink product product failed: {str(e)}')
+            raise
