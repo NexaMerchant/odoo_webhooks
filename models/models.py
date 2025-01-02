@@ -6,10 +6,18 @@ import logging
 from requests import Request, Session
 import json
 from requests.exceptions import RequestException
+from json import JSONEncoder
+from datetime import datetime
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 _logger = logging.getLogger(__name__)
+
+class DateTimeEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 class webhooks(models.Model):
@@ -44,17 +52,20 @@ class webhooks(models.Model):
         if self.website_id and record.website_id != self.website_id:
             return
         try:
+            
+            values = record.read()[0]
+            
             data = {
                 'action': action,
                 'model': self.model_id.model,
                 'record_id': record.id,
-                'values': record.read()[0]
+                'values': values
             }
 
             print(f'Sending webhook to {self.url}')
             
             headers = {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 'User-Agent': 'Odoo-Webhook/1.0'
             }
 
