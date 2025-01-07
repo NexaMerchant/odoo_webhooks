@@ -5,9 +5,10 @@ import requests
 import logging
 from requests import Request, Session
 import json
-from requests.exceptions import RequestException
+from requests.exceptions import RequestException, HTTPError
 from json import JSONEncoder
-from datetime import datetime
+import base64
+import datetime
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -39,6 +40,7 @@ class webhooks(models.Model):
     # use queue job to send webhook
     # use cron job to send webhook
     def _send_webhook(self, record, action):
+        print(f'Sending webhook to {self.url}')
         if not self.is_active:
             return
         if action == 'create' and not self.trigger_on_create:
@@ -49,11 +51,29 @@ class webhooks(models.Model):
         if action == 'unlink' and not self.trigger_on_delete:
             return
         # if the webhook has website_id, check if the record belongs to the website
-        if self.website_id and record.website_id != self.website_id:
+        if record.website_id and self.website_id and record.website_id != self.website_id:
             return
         try:
-            
-            values = record.read()[0]
+
+            # Convert record data to json
+            try:
+                record_data = record.read()[0]
+                for key, value in record_data.items():
+                    if isinstance(value, bytes):
+                        record_data[key] = value.decode('utf-8')
+                    elif isinstance(value, datetime.datetime):
+                        record_data[key] = value.isoformat()
+                # when model eq product.product, add product variant and product option value  
+            except IndexError:
+                record_data = record.read()
+            except Exception as e:
+                _logger.error(f'Webhook failed: {str(e)}')
+                raise
+                          
+            print(record_data)
+            values = json.dumps(record_data)
+
+            print(values)
             
             data = {
                 'action': action,
@@ -62,10 +82,12 @@ class webhooks(models.Model):
                 'values': values
             }
 
-            print(f'Sending webhook to {self.url}')
+            # print(data)
+
+            # print(f'Sending webhook to {self.url}')
             
             headers = {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json',
                 'User-Agent': 'Odoo-Webhook/1.0'
             }
 
@@ -73,23 +95,31 @@ class webhooks(models.Model):
             if self.secert_key:
                 headers['Secert-Key'] = self.secert_key
 
-            print(headers)
-
-            session = requests.Session()
-            session.verify = True
-            response = session.post(
-                url=self.url.strip(),
-                data=data,
-                headers=headers,
-                timeout=10,
-                verify=True
-            )
-            response.raise_for_status()
-            
-            self.write({
-                'last_call': fields.Datetime.now()
-            })
-            
+            # print(headers)
+            try:
+                session = requests.Session()
+                session.verify = True
+                response = session.post(
+                    url=self.url.strip(),
+                    json=data,
+                    headers=headers,
+                    timeout=10,
+                    verify=True
+                )
+                response.raise_for_status()
+                
+                self.write({
+                    'last_call': fields.Datetime.now()
+                })
+            except HTTPError as http_err:
+                _logger.error(f'HTTP error occurred: {http_err}')
+                raise
+            except RequestException as e:
+                _logger.error(f'Webhook request failed: {str(e)}')
+                raise
+            except Exception as e:
+                _logger.error(f'Webhook failed: {self.url} - Error: {str(e)}')
+                raise
             _logger.info(f'Webhook sent: {self.url} - Status: {response.status_code}')
         except RequestException as e:
             _logger.error(f'Webhook request failed: {str(e)}')
@@ -101,7 +131,7 @@ class webhooks(models.Model):
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    @api.model
+    #@api.model
     def write(self, vals):
         try:
             res = super(SaleOrder, self).write(vals)
@@ -112,7 +142,7 @@ class SaleOrder(models.Model):
         except Exception as e:
             _logger.error(f'Webhook write sale order failed: {str(e)}')
             raise
-    @api.model
+    #@api.model
     def create(self, vals):
         try:
             res = super(SaleOrder, self).create(vals)
@@ -123,7 +153,7 @@ class SaleOrder(models.Model):
         except Exception as e:
             _logger.error(f'Webhook create sale order failed: {str(e)}')
             raise
-    @api.model
+    #@api.model
     def unlink(self):
         try:
             res = super(SaleOrder, self).unlink()
@@ -177,7 +207,7 @@ class SaleOrderDelivery(models.Model):
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
 
-    @api.model
+    #@api.model
     def write(self, vals):
         try:
             res = super(SaleOrderLine, self).write(vals)
@@ -188,7 +218,7 @@ class SaleOrderLine(models.Model):
         except Exception as e:
             _logger.error(f'Webhook write sale order line failed: {str(e)}')
             raise
-    @api.model
+    #@api.model
     def create(self, vals):
         try:
             res = super(SaleOrderLine, self).create(vals)
@@ -199,7 +229,7 @@ class SaleOrderLine(models.Model):
         except Exception as e:
             _logger.error(f'Webhook create sale order line failed: {str(e)}')
             raise
-    @api.model
+    #@api.model
     def unlink(self):
         try:
             res = super(SaleOrderLine, self).unlink()
@@ -215,7 +245,7 @@ class SaleOrderLine(models.Model):
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
-    @api.model
+    #@api.model
     def write(self, vals):
         try:
             res = super(ProductTemplate, self).write(vals)
@@ -227,7 +257,7 @@ class ProductTemplate(models.Model):
             _logger.error(f'Webhook write product template failed: {str(e)}')
             raise
     
-    @api.model
+    #@api.model
     def create(self, vals):
         try:
             res = super(ProductTemplate, self).create(vals)
@@ -238,7 +268,7 @@ class ProductTemplate(models.Model):
         except Exception as e:
             _logger.error(f'Webhook create product template failed: {str(e)}')
             raise
-    @api.model
+    #@api.model
     def unlink(self):
         try:
             res = super(ProductTemplate, self).unlink()
@@ -254,7 +284,7 @@ class ProductTemplate(models.Model):
 class ProductProduct(models.Model):
     _inherit = 'product.product'
 
-    @api.model
+    #@api.model
     def write(self, vals):
         try:
             res = super(ProductProduct, self).write(vals)
@@ -265,10 +295,11 @@ class ProductProduct(models.Model):
         except Exception as e:
             _logger.error(f'Webhook write product product failed: {str(e)}')
             raise
-    @api.model
+    #@api.model
     def create(self, vals):
         try:
             res = super(ProductProduct, self).create(vals)
+            # format product data to json
             webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.product')])
             for webhook in webhooks:
                 webhook._send_webhook(res, 'create')
@@ -276,7 +307,7 @@ class ProductProduct(models.Model):
         except Exception as e:
             _logger.error(f'Webhook create product product failed: {str(e)}')
             raise
-    @api.model
+    #@api.model
     def unlink(self):
         try:
             res = super(ProductProduct, self).unlink()
