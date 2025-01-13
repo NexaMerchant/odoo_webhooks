@@ -71,7 +71,7 @@ class webhooks(models.Model):
                 raise
                           
             print(record_data)
-            values = json.dumps(record_data)
+            values = record_data
 
             print(values)
             
@@ -138,6 +138,8 @@ class SaleOrder(models.Model):
             webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'sale.order')])
             for webhook in webhooks:
                 webhook._send_webhook(self, 'write')
+                # add it to Queue
+                webhook.send_request_async()
             return res
         except Exception as e:
             _logger.error(f'Webhook write sale order failed: {str(e)}')
@@ -288,9 +290,10 @@ class ProductProduct(models.Model):
     def write(self, vals):
         try:
             res = super(ProductProduct, self).write(vals)
+            product = self.env['product.template'].search([('product_variant_id', '=', self.id)])
             webhooks = self.env['webhooks.webhooks'].search([('model_id.model', '=', 'product.product')])
             for webhook in webhooks:
-                webhook._send_webhook(self, 'write')
+                webhook._send_webhook(self, product, 'write')
             return res
         except Exception as e:
             _logger.error(f'Webhook write product product failed: {str(e)}')
