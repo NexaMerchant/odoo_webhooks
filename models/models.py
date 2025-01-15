@@ -20,6 +20,12 @@ class DateTimeEncoder(JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, (datetime.date, datetime.datetime)):
+        return obj.isoformat()
+    raise TypeError("Type %s not serializable" % type(obj))
+
 
 class webhooks(models.Model):
     _name = 'webhooks.webhooks'
@@ -99,9 +105,10 @@ class webhooks(models.Model):
             try:
                 session = requests.Session()
                 session.verify = True
+                json_data = json.dumps(data, default=json_serial)
                 response = session.post(
                     url=self.url.strip(),
-                    json=data,
+                    json=json_data,
                     headers=headers,
                     timeout=10,
                     verify=True
